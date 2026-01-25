@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-export default function DigitColumn({ value, label, color = '#0ea5e9' }) {
+export default function DigitColumn({ value, label, color = '#0ea5e9', fontSize = 'medium', labelFontSize = 'medium' }) {
   const [prevValue, setPrevValue] = useState(value);
   const [isChanging, setIsChanging] = useState(false);
   const [isSafari, setIsSafari] = useState(false);
@@ -126,6 +126,26 @@ export default function DigitColumn({ value, label, color = '#0ea5e9' }) {
       return "w-16 sm:w-20 md:w-24"; // 一位数
     }
   };
+
+  // 字体大小映射
+  const getFontSizeClasses = () => {
+    return {
+      small: 'text-4xl sm:text-5xl md:text-6xl',
+      medium: 'text-5xl sm:text-6xl md:text-7xl',
+      large: 'text-6xl sm:text-7xl md:text-8xl'
+    };
+  };
+
+  const getLabelFontSizeClasses = () => {
+    return {
+      small: 'text-sm',
+      medium: 'text-base',
+      large: 'text-lg'
+    };
+  };
+
+  const numberSizeClass = getFontSizeClasses()[fontSize] || getFontSizeClasses().medium;
+  const labelSizeClass = getLabelFontSizeClasses()[labelFontSize] || getLabelFontSizeClasses().medium;
   
   return (
     <div className="flex flex-col items-center">
@@ -158,7 +178,7 @@ export default function DigitColumn({ value, label, color = '#0ea5e9' }) {
                   animate={{ y: '-100%', opacity: 0 }}
                   exit={{ y: '-100%', opacity: 0 }}
                   transition={{ duration: isSafari ? 0.2 : 0.3, ease: 'easeInOut' }}
-                  className="absolute text-5xl sm:text-6xl md:text-7xl font-bold"
+                  className={`absolute ${numberSizeClass} font-bold`}
                   style={{ 
                     color,
                     // 添加硬件加速
@@ -176,7 +196,7 @@ export default function DigitColumn({ value, label, color = '#0ea5e9' }) {
                   initial={{ y: '100%', opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
                   transition={{ duration: isSafari ? 0.2 : 0.3, ease: 'easeInOut' }}
-                  className="absolute text-5xl sm:text-6xl md:text-7xl font-bold"
+                  className={`absolute ${numberSizeClass} font-bold`}
                   style={{ 
                     color,
                     // 添加硬件加速
@@ -191,7 +211,7 @@ export default function DigitColumn({ value, label, color = '#0ea5e9' }) {
             ) : (
               <motion.span
                 key={`static-${value}-${animationRef.current.isAnimating ? Date.now() : 'stable'}`}
-                className="text-5xl sm:text-6xl md:text-7xl font-bold"
+                className={`${numberSizeClass} font-bold`}
                 style={{ 
                   color,
                   // 添加硬件加速
@@ -207,8 +227,8 @@ export default function DigitColumn({ value, label, color = '#0ea5e9' }) {
       </motion.div>
       
       {/* 标签 */}
-      <motion.span 
-        className="mt-2 text-sm text-gray-500 dark:text-gray-400"
+      <motion.span
+        className={`mt-2 ${labelSizeClass} text-gray-500 dark:text-gray-400`}
         whileHover={{ color }}
         transition={{ duration: 0.3 }}
       >

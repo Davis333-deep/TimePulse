@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTimers } from '../../context/TimerContext';
+import { useFullscreen } from '../../context/FullscreenContext';
 import { useTranslation } from '../../hooks/useTranslation';
 import DigitColumn from './DigitColumn';
 import { addNotification } from '../../utils/notificationManager';
@@ -9,6 +10,7 @@ import LapTimesModal from '../UI/LapTimesModal';
 
 export default function TimerDisplay() {
   const { getActiveTimer, updateTimer, checkAndUpdateDefaultTimer } = useTimers();
+  const { isFullscreen, timerFontSize, labelFontSize } = useFullscreen();
   const { t, currentLang } = useTranslation();
   const [timeValue, setTimeValue] = useState({ years: 0, days: 0, hours: 0, minutes: 0, seconds: 0 });
   const [showDays, setShowDays] = useState(true);
@@ -372,7 +374,37 @@ export default function TimerDisplay() {
   };
   
   const activeTimer = getActiveTimer();
-  
+
+  // 字体大小映射
+  const getTimerFontSizeClasses = () => {
+    if (isFullscreen) {
+      // 全屏模式：使用固定大尺寸
+      return {
+        small: 'text-5xl sm:text-6xl md:text-7xl',
+        medium: 'text-6xl sm:text-7xl md:text-8xl',
+        large: 'text-7xl sm:text-8xl md:text-9xl'
+      };
+    } else {
+      // 普通模式：使用响应式尺寸
+      return {
+        small: 'text-4xl sm:text-5xl md:text-6xl',
+        medium: 'text-5xl sm:text-6xl md:text-7xl',
+        large: 'text-6xl sm:text-7xl md:text-8xl'
+      };
+    }
+  };
+
+  const getLabelFontSizeClasses = () => {
+    return {
+      small: 'text-sm',
+      medium: 'text-base',
+      large: 'text-lg'
+    };
+  };
+
+  const timerClasses = getTimerFontSizeClasses();
+  const labelClasses = getLabelFontSizeClasses();
+
   if (!activeTimer) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -413,12 +445,12 @@ export default function TimerDisplay() {
       key={activeTimer.id}
     >
       {/* 计时器名称 */}
-      <motion.h2 
-        className="text-xl sm:text-2xl md:text-3xl font-medium mb-4"
+      <motion.h2
+        className={`${isFullscreen ? 'text-3xl md:text-4xl' : 'text-xl sm:text-2xl md:text-3xl'} font-medium mb-4`}
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        style={{ 
+        style={{
           color: activeTimer.color,
           transition: 'color 0.3s var(--transition-timing)'
         }}
@@ -436,18 +468,22 @@ export default function TimerDisplay() {
         {/* 第一行：年数和天数 - 仅在需要时显示 */}
         {showYears && (
           <div className="flex items-center justify-center space-x-2 sm:space-x-4">
-            <DigitColumn 
-              value={formatNumber(timeValue.years)} 
+            <DigitColumn
+              value={formatNumber(timeValue.years)}
               label={t('time.years')}
               color={activeTimer.color || '#0ea5e9'}
+              fontSize={timerFontSize}
+              labelFontSize={labelFontSize}
             />
-            <span className="text-4xl sm:text-5xl md:text-6xl font-thin text-gray-400">:</span>
+            <span className={`${timerClasses[timerFontSize]} font-thin text-gray-400`}>:</span>
             {showDays && (
               <>
-                <DigitColumn 
-                  value={formatNumber(timeValue.days)} 
+                <DigitColumn
+                  value={formatNumber(timeValue.days)}
                   label={t('time.days')}
                   color={activeTimer.color || '#0ea5e9'}
+                  fontSize={timerFontSize}
+                  labelFontSize={labelFontSize}
                 />
                 <span className="text-4xl sm:text-5xl md:text-6xl font-thin text-gray-400 hidden sm:inline">:</span>
               </>
@@ -460,36 +496,44 @@ export default function TimerDisplay() {
           {/* 天数 - 仅在没有年数且需要时显示 */}
           {!showYears && showDays && (
             <>
-              <DigitColumn 
-                value={formatNumber(timeValue.days)} 
+              <DigitColumn
+                value={formatNumber(timeValue.days)}
                 label={t('time.days')}
                 color={activeTimer.color || '#0ea5e9'}
+                fontSize={timerFontSize}
+                labelFontSize={labelFontSize}
               />
-              <span className="text-4xl sm:text-5xl md:text-6xl font-thin text-gray-400">:</span>
+              <span className={`${timerClasses[timerFontSize]} font-thin text-gray-400`}>:</span>
             </>
           )}
           
           {/* 小时 */}
-          <DigitColumn 
-            value={formatNumber(timeValue.hours)} 
+          <DigitColumn
+            value={formatNumber(timeValue.hours)}
             label={t('time.hours')}
             color={activeTimer.color || '#0ea5e9'}
+            fontSize={timerFontSize}
+            labelFontSize={labelFontSize}
           />
           <span className="text-4xl sm:text-5xl md:text-6xl font-thin text-gray-400">:</span>
           
           {/* 分钟 */}
-          <DigitColumn 
-            value={formatNumber(timeValue.minutes)} 
+          <DigitColumn
+            value={formatNumber(timeValue.minutes)}
             label={t('time.minutes')}
             color={activeTimer.color || '#0ea5e9'}
+            fontSize={timerFontSize}
+            labelFontSize={labelFontSize}
           />
           <span className="text-4xl sm:text-5xl md:text-6xl font-thin text-gray-400">:</span>
           
           {/* 秒 */}
-          <DigitColumn 
-            value={formatNumber(timeValue.seconds)} 
+          <DigitColumn
+            value={formatNumber(timeValue.seconds)}
             label={t('time.seconds')}
             color={activeTimer.color || '#0ea5e9'}
+            fontSize={timerFontSize}
+            labelFontSize={labelFontSize}
           />
         </div>
       </motion.div>

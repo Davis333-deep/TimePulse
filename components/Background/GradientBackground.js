@@ -2,10 +2,17 @@ import { useRef, useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTimers } from '../../context/TimerContext';
 import { useTheme } from '../../context/ThemeContext';
+import { useBackground } from '../../context/BackgroundContext';
 
 export default function GradientBackground() {
   const { getActiveTimer, activeTimerId } = useTimers();
   const { theme } = useTheme();
+  const { backgroundType } = useBackground();
+
+  // 如果使用自定义背景，不渲染渐变背景
+  if (backgroundType === 'custom') {
+    return null;
+  }
   const [circles, setCircles] = useState([]);
   const [prevTimerId, setPrevTimerId] = useState(null);
   const containerRef = useRef(null);

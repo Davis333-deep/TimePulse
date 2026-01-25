@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiMenu, FiX, FiSettings, FiMoon, FiSun, FiUser, FiMaximize, FiMinimize, FiEdit, FiSave, FiGlobe, FiPlus, FiShare2 } from 'react-icons/fi';
+import { FiMenu, FiX, FiSettings, FiMoon, FiSun, FiUser, FiMaximize, FiMinimize, FiEdit, FiSave, FiGlobe, FiPlus, FiShare2, FiImage } from 'react-icons/fi';
 import { useTimers } from '../../context/TimerContext';
 import { useTheme } from '../../context/ThemeContext';
+import { useFullscreen } from '../../context/FullscreenContext';
 import { useTranslation } from '../../hooks/useTranslation';
 import LoginModal from '../UI/LoginModal';
 import ShareModal from '../UI/ShareModal';
@@ -15,12 +16,12 @@ import { HexColorPicker } from 'react-colorful';
 export default function Header() {
   const { timers, activeTimerId, setActiveTimerId, deleteTimer, updateTimer } = useTimers();
   const { theme, toggleTheme, accentColor } = useTheme();
+  const { isFullscreen, isHeaderVisible, headerHideDelay, showHeader, hideHeader } = useFullscreen();
   const { t, changeLanguage, currentLang } = useTranslation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isManageOpen, setIsManageOpen] = useState(false);
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [isShareOpen, setIsShareOpen] = useState(false);
-  const [isFullscreen, setIsFullscreen] = useState(false);
   const [editingTimer, setEditingTimer] = useState(null);
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [isLanguageOpen, setIsLanguageOpen] = useState(false);
@@ -258,7 +259,7 @@ export default function Header() {
     } else {
       document.exitFullscreen();
     }
-    setIsFullscreen(!isFullscreen);
+    // 不需要手动设置 isFullscreen，Fullscreen API 会自动触发 fullscreenchange 事件更新状态
   };
 
   // 处理语言切换
@@ -338,21 +339,53 @@ export default function Header() {
     }
   };
 
-  // 监听全屏状态变化
+  // 全屏模式下监听鼠标移动，自动显示/隐藏顶部栏
   useEffect(() => {
-    const handleFullscreenChange = () => {
-      setIsFullscreen(!!document.fullscreenElement);
+    // 只在全屏模式下启用
+    if (!isFullscreen) {
+      return;
+    }
+
+    let hideTimer;
+
+    const handleMouseMove = () => {
+      // 鼠标移动时立即显示 Header
+      showHeader();
+
+      // 清除之前的隐藏定时器
+      if (hideTimer) {
+        clearTimeout(hideTimer);
+      }
+
+      // 设置新的隐藏定时器
+      hideTimer = setTimeout(() => {
+        hideHeader();
+      }, headerHideDelay);
     };
 
-    document.addEventListener('fullscreenchange', handleFullscreenChange);
-    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
-  }, []);
+    document.addEventListener('mousemove', handleMouseMove);
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      if (hideTimer) {
+        clearTimeout(hideTimer);
+      }
+    };
+  }, [isFullscreen, headerHideDelay, showHeader, hideHeader]);
 
   // 获取当前活动计时器
   const activeTimer = timers.find(timer => timer.id === activeTimerId) || null;
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-40">
+    <motion.header
+      className="fixed top-0 left-0 right-0 z-40"
+      initial={{ y: 0 }}
+      animate={{
+        y: isFullscreen && !isHeaderVisible ? '-100%' : 0,
+        opacity: isFullscreen && !isHeaderVisible ? 0 : 1
+      }}
+      transition={{ duration: 0.3 }}
+    >
       <nav className="glass-card mx-4 mt-4 px-6 py-4 flex items-center justify-between relative">
         {/* Logo - 增强渐变效果，使用较深的相似色 */}
         <motion.div 
@@ -565,7 +598,20 @@ export default function Header() {
             >
               <FiPlus className="text-xl" />
             </button>
-            
+
+            {/* 背景设置按钮 */}
+            <button
+              className="p-2 ml-1 rounded-full btn-glass-hover text-gray-700 dark:text-gray-300 cursor-pointer"
+              onClick={() => {
+                if (window.location.hash !== '#background') {
+                  window.location.hash = 'background';
+                }
+              }}
+              data-umami-event="背景设置"
+            >
+              <FiImage className="text-xl" />
+            </button>
+
             {/* 分享按钮 */}
             <button
               className="p-2 ml-1 rounded-full btn-glass-hover text-gray-700 dark:text-gray-300 cursor-pointer"
@@ -579,7 +625,7 @@ export default function Header() {
             >
               <FiShare2 className="text-xl" />
             </button>
-            
+
             {/* 全屏按钮 */}
             <button
               className="p-2 ml-1 rounded-full btn-glass-hover text-gray-700 dark:text-gray-300 cursor-pointer"
@@ -588,7 +634,7 @@ export default function Header() {
             >
               {isFullscreen ? <FiMinimize className="text-xl" /> : <FiMaximize className="text-xl" />}
             </button>
-            
+
             {/* 登录按钮 */}
             <button
               className="p-2 ml-1 rounded-full btn-glass-hover text-gray-700 dark:text-gray-300 cursor-pointer"
@@ -752,6 +798,36 @@ export default function Header() {
                 >
                   <FiShare2 className="text-xl" />
                   <span className="text-xs ml-2 flex-1 text-right">{t('timer.share')}</span>
+                </button>
+
+                {/* 背景设置按钮 */}
+                <button
+                  className="flex items-center justify-between p-3 rounded-lg bg-white/10 dark:bg-black/10 backdrop-blur-sm border border-gray-200/60 dark:border-white/10 text-gray-700 dark:text-gray-300 hover:bg-white/20 dark:hover:bg-black/20 cursor-pointer transition-colors"
+                  onClick={() => {
+                    setIsMenuOpen(false);
+                    if (window.location.hash !== '#background') {
+                      window.location.hash = 'background';
+                    }
+                  }}
+                  data-umami-event="背景设置"
+                >
+                  <FiImage className="text-xl" />
+                  <span className="text-xs ml-2 flex-1 text-right">背景设置</span>
+                </button>
+
+                {/* 全屏设置按钮 */}
+                <button
+                  className="flex items-center justify-between p-3 rounded-lg bg-white/10 dark:bg-black/10 backdrop-blur-sm border border-gray-200/60 dark:border-white/10 text-gray-700 dark:text-gray-300 hover:bg-white/20 dark:hover:bg-black/20 cursor-pointer transition-colors"
+                  onClick={() => {
+                    setIsMenuOpen(false);
+                    if (window.location.hash !== '#fullscreen-settings') {
+                      window.location.hash = 'fullscreen-settings';
+                    }
+                  }}
+                  data-umami-event="全屏设置"
+                >
+                  <FiMaximize className="text-xl" />
+                  <span className="text-xs ml-2 flex-1 text-right">全屏设置</span>
                 </button>
               </div>
             </div>
@@ -1071,6 +1147,6 @@ export default function Header() {
           }} />
         )}
       </AnimatePresence>
-    </header>
+    </motion.header>
   );
 }

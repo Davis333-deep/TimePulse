@@ -3,6 +3,8 @@ import Head from 'next/head';
 import '../styles/globals.css';
 import { TimerProvider } from '../context/TimerContext';
 import { ThemeProvider } from '../context/ThemeContext';
+import { BackgroundProvider } from '../context/BackgroundContext';
+import { FullscreenProvider } from '../context/FullscreenContext';
 import { getFromRemoteCache } from '../utils/syncService';
 import ScrollProgress from '../components/UI/ScrollProgress';
 import ScrollHandle from '../components/UI/ScrollHandle';
@@ -80,19 +82,23 @@ function MyApp({ Component, pageProps }) {
 
   return (
     <ThemeProvider>
-      <TimerProvider>
-        <Head>
-          <title>TimePulse - 现代化倒计时</title>
-          <meta name="description" content="TimePulse - 一个现代化的倒计时网页应用" />
-          <link rel="icon" href="/favicon.ico" />
-          <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
-        </Head>
-        <OfflineNotification /> {/* 保留此组件用于监听离线状态 */}
-        <GlobalNotificationManager />
-        <ScrollProgress />
-        <ScrollHandle />
-        <Component {...pageProps} />
-      </TimerProvider>
+      <BackgroundProvider>
+        <FullscreenProvider>
+          <TimerProvider>
+            <Head>
+              <title>TimePulse - 现代化倒计时</title>
+              <meta name="description" content="TimePulse - 一个现代化的倒计时网页应用" />
+              <link rel="icon" href="/favicon.ico" />
+              <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+            </Head>
+            <OfflineNotification /> {/* 保留此组件用于监听离线状态 */}
+            <GlobalNotificationManager />
+            <ScrollProgress />
+            <ScrollHandle />
+            <Component {...pageProps} />
+          </TimerProvider>
+        </FullscreenProvider>
+      </BackgroundProvider>
     </ThemeProvider>
   );
 }

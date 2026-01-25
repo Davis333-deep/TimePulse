@@ -4,10 +4,12 @@ import Header from './Header';
 import Footer from './Footer';
 import UpdateToast from '../UI/UpdateToast';
 import { ThemeColorSynchronizer } from '../../context/ThemeContext';
+import { useFullscreen } from '../../context/FullscreenContext';
 import { useTranslation } from '../../hooks/useTranslation';
 
 export default function Layout({ children }) {
   const { t } = useTranslation();
+  const { isFullscreen } = useFullscreen();
   const { scrollYProgress } = useScroll();
   const footerRef = useRef(null);
   const [showFooter, setShowFooter] = useState(false);
@@ -77,30 +79,32 @@ export default function Layout({ children }) {
     <ThemeColorSynchronizer>
       <div className="flex flex-col min-h-screen">
         <Header />
-        
+
         {children}
-        
+
         {/* 添加更新提示 Toast */}
         <UpdateToast />
+
+        {/* 修改 Footer 容器，适应不同屏幕大小，全屏时隐藏 */}
+        {!isFullscreen && (
+          <motion.div
+            ref={footerRef}
+            style={{
+              opacity: footerOpacity,
+              backdropFilter: `blur(${footerBlur.get()}px)`,
+              zIndex: footerZIndex,
+              pointerEvents: showFooter ? 'auto' : 'none'
+            }}
+            className="fixed inset-0 flex items-center justify-center overflow-y-auto"
+          >
+            <div className="w-full">
+              <Footer />
+            </div>
+          </motion.div>
+        )}
         
-        {/* 修改 Footer 容器，适应不同屏幕大小 */}
-        <motion.div 
-          ref={footerRef}
-          style={{ 
-            opacity: footerOpacity,
-            backdropFilter: `blur(${footerBlur.get()}px)`,
-            zIndex: footerZIndex,
-            pointerEvents: showFooter ? 'auto' : 'none'
-          }} 
-          className="fixed inset-0 flex items-center justify-center overflow-y-auto"
-        >
-          <div className="w-full">
-            <Footer />
-          </div>
-        </motion.div>
-        
-        {/* 下滑提示 - 当footer显示时或已经滚动时隐藏 */}
-        {!showFooter && !hasScrolled && (
+        {/* 下滑提示 - 当footer显示时或已经滚动时或全屏时隐藏 */}
+        {!showFooter && !hasScrolled && !isFullscreen && (
           <motion.div 
             className="fixed bottom-24 left-0 right-0 mx-auto w-full text-center text-gray-400 text-sm pointer-events-none z-20"
             initial={{ opacity: 0.6 }}

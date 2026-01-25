@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiRefreshCw, FiX } from 'react-icons/fi';
 import { useTranslation } from '../../hooks/useTranslation';
@@ -8,21 +8,38 @@ export default function UpdateToast() {
   const [showToast, setShowToast] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
+  // 使用 ref 来跟踪最后处理的更新时间戳，避免重复提示
+  const lastUpdateTimestampRef = useRef(null);
+  const lastProcessedTimestampRef = useRef(null);
+
   useEffect(() => {
     const handleCacheUpdated = (event) => {
-      // 检查是否真的有更新
+      // 检查是否真的有更新，并且不是重复的同一更新
       if (event.detail.hasUpdates) {
+        const updateTimestamp = event.detail.timestamp;
+
+        // 如果这个更新已经被处理过，则不再显示
+        if (lastProcessedTimestampRef.current === updateTimestamp) {
+          console.log('重复的更新提示，忽略');
+          return;
+        }
+
+        // 记录这次处理的更新时间戳
+        lastProcessedTimestampRef.current = updateTimestamp;
         setShowToast(true);
-        console.log(`${new Date().toLocaleTimeString()} | [PWA] 检测到应用更新，建议刷新页面`);
+        console.log(`${new Date().toLocaleTimeString()} | [PWA] 检测到应用更新，提示用户刷新`);
       }
     };
 
     window.addEventListener('cacheUpdatedWithChanges', handleCacheUpdated);
     return () => window.removeEventListener('cacheUpdatedWithChanges', handleCacheUpdated);
-  }, []);
+  }, []); // 空依赖数组，只在组件挂载时绑定一次
 
   const handleRefresh = () => {
     setIsRefreshing(true);
+    // 关闭 toast
+    setShowToast(false);
+
     // 延迟一点时间显示刷新动画，然后刷新页面
     setTimeout(() => {
       window.location.reload();
@@ -68,26 +85,26 @@ export default function UpdateToast() {
                 <FiX className="w-5 h-5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300" />
               </button>
             </div>
-            
+
             <div className="mb-6">
               <p className="text-sm text-gray-600 dark:text-gray-300">
                 {t('updateToast.message', '发现新版本，建议刷新页面以获得最佳体验')}
               </p>
             </div>
-            
+
             <div className="flex space-x-3">
               <button
                 onClick={handleRefresh}
                 disabled={isRefreshing}
                 className={`flex-1 btn-glass-primary inline-flex items-center justify-center text-sm ${
-                  isRefreshing 
-                    ? 'cursor-not-allowed opacity-60' 
+                  isRefreshing
+                    ? 'cursor-not-allowed opacity-60'
                     : ''
                 }`}
               >
                 <FiRefreshCw className={`w-4 h-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
-                {isRefreshing 
-                  ? t('updateToast.refreshing', '刷新中...') 
+                {isRefreshing
+                  ? t('updateToast.refreshing', '刷新中...')
                   : t('updateToast.refresh', '刷新')
                 }
               </button>

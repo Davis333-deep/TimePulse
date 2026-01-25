@@ -3,20 +3,25 @@ import { useRouter } from 'next/router';
 import { motion, AnimatePresence } from 'framer-motion';
 import Layout from '../components/Layout/Layout';
 import GradientBackground from '../components/Background/GradientBackground';
+import CustomBackground from '../components/Background/CustomBackground';
 import TimerDisplay from '../components/Countdown/TimerDisplay';
 import AddTimerModal from '../components/UI/AddTimerModal';
 import AddStopwatchModal from '../components/UI/AddStopwatchModal';
 import AddWorldClockModal from '../components/UI/AddWorldClockModal';
 import TimerTypeModal from '../components/UI/TimerTypeModal';
 import LoginModal from '../components/UI/LoginModal';
+import BackgroundSettingsModal from '../components/UI/BackgroundSettingsModal';
+import FullscreenSettingsModal from '../components/UI/FullscreenSettingsModal';
 import { useTimers } from '../context/TimerContext';
 import { useTheme } from '../context/ThemeContext';
+import { useFullscreen } from '../context/FullscreenContext';
 import { useTranslation } from '../hooks/useTranslation';
 import { parseShareUrl } from '../utils/shareUtils';
 
 export default function Home() {
   const { timers, activeTimerId, setActiveTimerId, addTimer } = useTimers();
   const { theme, accentColor } = useTheme();
+  const { isFullscreen } = useFullscreen();
   const { t } = useTranslation();
   const router = useRouter();
   
@@ -26,7 +31,8 @@ export default function Home() {
   const [isCountdownModalOpen, setIsCountdownModalOpen] = useState(false);
   const [isStopwatchModalOpen, setIsStopwatchModalOpen] = useState(false);
   const [isWorldClockModalOpen, setIsWorldClockModalOpen] = useState(false);
-  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isBackgroundSettingsOpen, setIsBackgroundSettingsOpen] = useState(false);
+  const [isFullscreenSettingsOpen, setIsFullscreenSettingsOpen] = useState(false);
   const [log, setLog] = useState([]);
   const [isFooterVisible, setIsFooterVisible] = useState(false);
   
@@ -79,18 +85,6 @@ export default function Home() {
     }
   };
 
-  // 处理全屏
-  const toggleFullscreen = () => {
-    if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen().catch(err => {
-        addLog(`错误: 无法进入全屏模式: ${err.message}`);
-      });
-    } else {
-      document.exitFullscreen();
-    }
-    setIsFullscreen(!isFullscreen);
-  };
-
   // 监听URL参数以同步数据
   useEffect(() => {
     if (router.query.share) {
@@ -116,12 +110,32 @@ export default function Home() {
     addLog(`加载了 ${timers.length} 个计时器`);
   }, [theme, timers.length]);
 
+  // 监听 hash 变化打开弹窗
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash.replace('#', '');
+
+      switch (hash) {
+        case 'background':
+          setIsBackgroundSettingsOpen(true);
+          break;
+        case 'fullscreen-settings':
+          setIsFullscreenSettingsOpen(true);
+          break;
+      }
+    };
+
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
+
   return (
     <>
       <Layout>
         <GradientBackground />
-        
-        <main className="relative flex flex-col items-center justify-center min-h-screen py-12 z-10">
+        <CustomBackground />
+
+        <main className={`relative flex flex-col items-center justify-center z-10 ${isFullscreen ? 'min-h-screen' : 'min-h-screen py-12'}`}>
           <TimerDisplay />
         </main>
       </Layout>
@@ -174,6 +188,30 @@ export default function Home() {
           <LoginModal onClose={() => {
             setIsLoginModalOpen(false);
             if (window.location.hash === '#login') {
+              window.location.hash = '';
+            }
+          }} />
+        )}
+      </AnimatePresence>
+
+      {/* 背景设置弹窗 */}
+      <AnimatePresence>
+        {isBackgroundSettingsOpen && (
+          <BackgroundSettingsModal onClose={() => {
+            setIsBackgroundSettingsOpen(false);
+            if (window.location.hash === '#background') {
+              window.location.hash = '';
+            }
+          }} />
+        )}
+      </AnimatePresence>
+
+      {/* 全屏设置弹窗 */}
+      <AnimatePresence>
+        {isFullscreenSettingsOpen && (
+          <FullscreenSettingsModal onClose={() => {
+            setIsFullscreenSettingsOpen(false);
+            if (window.location.hash === '#fullscreen-settings') {
               window.location.hash = '';
             }
           }} />
